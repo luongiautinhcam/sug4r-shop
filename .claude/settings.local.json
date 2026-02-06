@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(git init:*)",
+      "Bash(npx create-next-app:*)",
+      "Bash(xcopy:*)",
+      "Bash(npm install:*)",
+      "Bash(npm view:*)",
+      "Bash(npx shadcn@latest init:*)",
+      "Bash(npx shadcn@latest add button input label card table dialog badge separator dropdown-menu tabs form textarea select toast sonner -y)",
+      "Bash(npx shadcn@latest add button input label card table dialog badge separator dropdown-menu tabs form textarea select sonner -y)",
+      "Bash(npx next build)",
+      "Bash(ls:*)",
+      "Bash(node -e:*)",
+      "Bash(npm ls:*)",
+      "Bash(npx drizzle-kit generate:*)",
+      "Bash(npx drizzle-kit migrate:*)",
+      "Bash(npx tsx:*)",
+      "Bash(curl:*)",
+      "Bash(npm run build:*)",
+      "Bash(test:*)",
+      "Bash(find:*)"
+    ]
+  }
+}
