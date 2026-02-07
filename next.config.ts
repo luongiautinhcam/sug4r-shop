@@ -54,6 +54,16 @@ const nextConfig: NextConfig = {
   productionBrowserSourceMaps: false,
   // Server external packages that shouldn't be bundled
   serverExternalPackages: ["argon2"],
+  // Standalone output for Docker deployment
+  output: "standalone",
+  // Allow external images from common hosting providers
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "**.amazonaws.com" },
+      { protocol: "https", hostname: "**.cloudflare.com" },
+      { protocol: "https", hostname: "images.unsplash.com" },
+    ],
+  },
 };
 
 export default nextConfig;

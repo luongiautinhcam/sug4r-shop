@@ -9,6 +9,7 @@ import { db } from "@/db";
 import { adminUsers } from "@/db/schema";
 import { lucia } from "@/lib/auth";
 import { validateAdminSession, getClientIp } from "@/lib/auth-guard";
+import { createPendingTotpToken } from "@/lib/totp";
 import { loginSchema } from "@/schemas/auth";
 import { RATE_LIMITS } from "@/lib/rate-limit";
 import { logAuditEvent } from "@/lib/audit";
@@ -17,9 +18,9 @@ import { logger } from "@/lib/logger";
 import type { ActionResult } from "@/types";
 
 export async function loginAction(
-  _prevState: ActionResult,
+  _prevState: ActionResult<{ requiresTotp?: boolean }>,
   formData: FormData,
-): Promise<ActionResult> {
+): Promise<ActionResult<{ requiresTotp?: boolean }>> {
   const headersList = await headers();
   const ip = getClientIp(headersList);
   const userAgent = headersList.get("user-agent") ?? "unknown";
@@ -149,12 +150,24 @@ export async function loginAction(
     return { success: false, error: "Invalid credentials." };
   }
 
-  // 8. Success — create session
-  const session = await lucia.createSession(user.id, {
-    // Lucia stores these in the session table via the adapter
-  });
+  // 8. Check if TOTP is enabled
+  if (user.totpEnabled) {
+    const pendingToken = createPendingTotpToken(user.id);
+    const cookieStore = await cookies();
+    cookieStore.set("totp_pending", pendingToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 5 * 60, // 5 minutes
+    });
 
-  // Store IP and user agent in the session record directly
+    return { success: true, data: { requiresTotp: true } };
+  }
+
+  // 9. Success — create session (no TOTP)
+  const session = await lucia.createSession(user.id, {});
+
   await db
     .update(adminUsers)
     .set({

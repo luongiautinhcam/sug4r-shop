@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/auth-guard";
 import { AdminSidebar } from "@/components/admin/sidebar";
 import { AdminHeader } from "@/components/admin/header";
+import { Toaster } from "@/components/ui/sonner";
 
 export default async function AdminDashboardLayout({
   children,
@@ -18,6 +19,7 @@ export default async function AdminDashboardLayout({
           {children}
         </main>
       </div>
+      <Toaster />
     </div>
   );
 }

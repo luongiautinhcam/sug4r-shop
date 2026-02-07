@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { getProductBySlug } from "@/actions/products";
 import { formatPrice } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -49,10 +50,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
         {/* Image */}
         <div className="flex items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-900">
           {product.imageUrl ? (
-            <img
+            <Image
               src={product.imageUrl}
               alt={product.name}
+              width={600}
+              height={400}
               className="h-full max-h-80 w-full rounded-lg object-cover"
+              priority
             />
           ) : (
             <div className="flex h-64 w-full items-center justify-center text-6xl text-zinc-300 dark:text-zinc-700">

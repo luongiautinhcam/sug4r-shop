@@ -1,7 +1,39 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+const STATE_CHANGING_METHODS = new Set(["POST", "PUT", "DELETE", "PATCH"]);
+
+function getAllowedOrigin(): string {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  try {
+    return new URL(siteUrl).origin;
+  } catch {
+    return "http://localhost:3000";
+  }
+}
+
 export function middleware(request: NextRequest) {
+  // CSRF Origin check for state-changing methods
+  if (STATE_CHANGING_METHODS.has(request.method)) {
+    const pathname = request.nextUrl.pathname;
+
+    // Exempt webhook endpoints (external callers)
+    if (!pathname.startsWith("/api/webhooks")) {
+      const origin = request.headers.get("origin");
+      const referer = request.headers.get("referer");
+
+      const requestOrigin = origin
+        ? origin
+        : referer
+          ? new URL(referer).origin
+          : null;
+
+      if (requestOrigin && requestOrigin !== getAllowedOrigin()) {
+        return new NextResponse(null, { status: 403 });
+      }
+    }
+  }
+
   const response = NextResponse.next();
 
   // Add security headers (belt + suspenders with next.config.ts headers)

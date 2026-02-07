@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmButton } from "@/components/admin/confirm-button";
+import { toast } from "sonner";
 import {
   getAdminCategories,
   createCategory,
@@ -113,21 +115,20 @@ export default function AdminCategoriesPage() {
         return;
       }
 
+      toast.success(editingId ? "Category updated" : "Category created");
       resetForm();
       loadCategories();
     });
   }
 
-  function handleDelete(id: string) {
-    setError(null);
-    startTransition(async () => {
-      const result = await deleteCategory(id);
-      if (!result.success) {
-        setError(result.error ?? "Failed to delete category");
-        return;
-      }
-      loadCategories();
-    });
+  async function handleDelete(id: string) {
+    const result = await deleteCategory(id);
+    if (!result.success) {
+      toast.error(result.error ?? "Failed to delete category");
+      return;
+    }
+    toast.success("Category deleted");
+    loadCategories();
   }
 
   return (
@@ -264,14 +265,16 @@ export default function AdminCategoriesPage() {
                           Edit
                         </Button>
                         {cat.productCount === 0 && (
-                          <Button
+                          <ConfirmButton
+                            title="Delete category?"
+                            description={`"${cat.name}" will be permanently deleted. This cannot be undone.`}
+                            confirmLabel="Delete"
                             variant="outline"
                             size="sm"
-                            onClick={() => handleDelete(cat.id)}
-                            disabled={isPending}
+                            onConfirm={() => handleDelete(cat.id)}
                           >
                             Delete
-                          </Button>
+                          </ConfirmButton>
                         )}
                       </div>
                     </td>

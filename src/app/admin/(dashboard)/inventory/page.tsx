@@ -4,8 +4,7 @@ import { getAdminProducts } from "@/actions/admin/products";
 import { formatDate, truncate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { revokeInventoryItem } from "@/actions/admin/inventory";
-import { redirect } from "next/navigation";
+import { RevokeButton } from "./revoke-button";
 
 export const metadata = {
   title: "Inventory",
@@ -41,13 +40,6 @@ export default async function AdminInventoryPage({
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-
-  async function handleRevoke(formData: FormData) {
-    "use server";
-    const id = formData.get("id") as string;
-    await revokeInventoryItem(id);
-    redirect("/admin/inventory");
-  }
 
   function buildUrl(overrides: Record<string, string | undefined>) {
     const p = new URLSearchParams();
@@ -177,12 +169,7 @@ export default async function AdminInventoryPage({
                   </td>
                   <td className="px-4 py-3 text-right">
                     {(item.status === "available" || item.status === "reserved") && (
-                      <form action={handleRevoke}>
-                        <input type="hidden" name="id" value={item.id} />
-                        <Button variant="outline" size="sm" type="submit">
-                          Revoke
-                        </Button>
-                      </form>
+                      <RevokeButton itemId={item.id} />
                     )}
                   </td>
                 </tr>

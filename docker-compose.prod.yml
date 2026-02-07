@@ -1,0 +1,56 @@
+# =============================================================================
+# sug4r-shop — Production Reference
+# Usage: docker compose -f docker-compose.prod.yml up -d
+# NOTE: Set all env vars in .env.production or your secrets manager
+# =============================================================================
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-sug4r}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-sug4r_shop}
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sug4r}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Not exposed to host — only accessible from app service
+    networks:
+      - internal
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-sug4r}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-sug4r_shop}
+      ENCRYPTION_KEY_V1: ${ENCRYPTION_KEY_V1:?Set ENCRYPTION_KEY_V1}
+      SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET}
+      NEXT_PUBLIC_SITE_NAME: ${NEXT_PUBLIC_SITE_NAME:-Sugar Shop}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?Set NEXT_PUBLIC_SITE_URL}
+      DEFAULT_CURRENCY: ${DEFAULT_CURRENCY:-USD}
+      SESSION_MAX_AGE_HOURS: ${SESSION_MAX_AGE_HOURS:-24}
+      DELIVERY_TOKEN_EXPIRY_HOURS: ${DELIVERY_TOKEN_EXPIRY_HOURS:-48}
+      DELIVERY_MAX_REVEALS: ${DELIVERY_MAX_REVEALS:-1}
+      RATE_LIMIT_ENABLED: "true"
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - internal
+
+volumes:
+  pgdata_prod:
+
+networks:
+  internal:
+    driver: bridge

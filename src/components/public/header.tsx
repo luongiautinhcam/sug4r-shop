@@ -11,7 +11,7 @@ export function PublicHeader() {
         >
           {SITE_NAME}
         </Link>
-        <nav className="flex items-center gap-6">
+        <nav aria-label="Main navigation" className="flex items-center gap-6">
           <Link
             href="/catalog"
             className="text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"

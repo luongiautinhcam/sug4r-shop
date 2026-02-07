@@ -3,6 +3,8 @@ import { ProductCard } from "@/components/public/product-card";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
+export const revalidate = 60; // ISR: revalidate catalog every 60 seconds
+
 export const metadata = {
   title: "Catalog",
   description: "Browse our selection of premium digital accounts and subscription keys.",

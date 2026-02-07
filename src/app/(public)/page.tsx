@@ -3,6 +3,8 @@ import { getFeaturedProducts, getCategories } from "@/actions/products";
 import { ProductCard } from "@/components/public/product-card";
 import { SITE_NAME } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
+
+export const revalidate = 60; // ISR: revalidate home page every 60 seconds
 import { Shield, Zap, Lock } from "lucide-react";
 
 export default async function HomePage() {

@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { getAdminProducts, toggleProductStatus } from "@/actions/admin/products";
+import { getAdminProducts } from "@/actions/admin/products";
 import { getAdminCategories } from "@/actions/admin/categories";
 import { formatPrice, formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { redirect } from "next/navigation";
+import { ProductStatusButton } from "./product-status-button";
 
 export const metadata = {
   title: "Products",
@@ -41,14 +41,6 @@ export default async function AdminProductsPage({
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-
-  async function handleToggleStatus(formData: FormData) {
-    "use server";
-    const id = formData.get("id") as string;
-    const newStatus = formData.get("status") as "draft" | "active" | "archived";
-    await toggleProductStatus(id, newStatus);
-    redirect("/admin/products");
-  }
 
   function buildUrl(overrides: Record<string, string | undefined>) {
     const p = new URLSearchParams();
@@ -218,24 +210,11 @@ export default async function AdminProductsPage({
                           Edit
                         </Button>
                       </Link>
-                      {p.status !== "active" && (
-                        <form action={handleToggleStatus}>
-                          <input type="hidden" name="id" value={p.id} />
-                          <input type="hidden" name="status" value="active" />
-                          <Button variant="outline" size="sm" type="submit">
-                            Activate
-                          </Button>
-                        </form>
-                      )}
-                      {p.status === "active" && (
-                        <form action={handleToggleStatus}>
-                          <input type="hidden" name="id" value={p.id} />
-                          <input type="hidden" name="status" value="archived" />
-                          <Button variant="outline" size="sm" type="submit">
-                            Archive
-                          </Button>
-                        </form>
-                      )}
+                      <ProductStatusButton
+                        productId={p.id}
+                        productName={p.name}
+                        currentStatus={p.status}
+                      />
                     </div>
                   </td>
                 </tr>

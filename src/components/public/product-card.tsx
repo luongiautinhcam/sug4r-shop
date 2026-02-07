@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/format";
 import type { PublicProduct } from "@/actions/products";
@@ -16,9 +17,11 @@ export function ProductCard({ product }: ProductCardProps) {
       {/* Image placeholder */}
       <div className="flex h-40 items-center justify-center bg-zinc-100 dark:bg-zinc-900">
         {product.imageUrl ? (
-          <img
+          <Image
             src={product.imageUrl}
             alt={product.name}
+            width={400}
+            height={160}
             className="h-full w-full object-cover"
           />
         ) : (

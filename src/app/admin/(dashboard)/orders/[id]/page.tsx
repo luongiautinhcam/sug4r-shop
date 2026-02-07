@@ -1,14 +1,8 @@
-import { notFound, redirect } from "next/navigation";
-import {
-  getOrderDetail,
-  markOrderPaid,
-  refundOrder,
-} from "@/actions/admin/orders";
-import { fulfillOrder } from "@/actions/admin/fulfillment";
+import { notFound } from "next/navigation";
+import { getOrderDetail } from "@/actions/admin/orders";
 import { formatPrice, formatDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { SITE_URL } from "@/lib/constants";
+import { OrderActions } from "./order-actions";
 
 export const metadata = {
   title: "Order Detail",
@@ -36,24 +30,6 @@ export default async function AdminOrderDetailPage({
     notFound();
   }
 
-  async function handleMarkPaid() {
-    "use server";
-    await markOrderPaid(id);
-    redirect(`/admin/orders/${id}`);
-  }
-
-  async function handleRefund() {
-    "use server";
-    await refundOrder(id);
-    redirect(`/admin/orders/${id}`);
-  }
-
-  async function handleFulfill() {
-    "use server";
-    await fulfillOrder(id);
-    redirect(`/admin/orders/${id}`);
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -74,25 +50,7 @@ export default async function AdminOrderDetailPage({
             {order.status}
           </Badge>
         </div>
-        <div className="flex items-center gap-2">
-          {order.status === "pending" && (
-            <form action={handleMarkPaid}>
-              <Button type="submit">Mark as Paid</Button>
-            </form>
-          )}
-          {order.status === "paid" && (
-            <form action={handleFulfill}>
-              <Button type="submit">Fulfill Order</Button>
-            </form>
-          )}
-          {(order.status === "paid" || order.status === "fulfilled") && (
-            <form action={handleRefund}>
-              <Button type="submit" variant="outline">
-                Refund
-              </Button>
-            </form>
-          )}
-        </div>
+        <OrderActions orderId={id} status={order.status} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
