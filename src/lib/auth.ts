@@ -19,7 +19,7 @@ export const lucia = new Lucia(adapter, {
   getUserAttributes: (attributes) => ({
     email: attributes.email,
     role: attributes.role,
-    isActive: attributes.is_active,
+    isActive: attributes.isActive,
   }),
 });
 
@@ -29,7 +29,7 @@ declare module "lucia" {
     DatabaseUserAttributes: {
       email: string;
       role: string;
-      is_active: boolean;
+      isActive: boolean;
     };
   }
 }

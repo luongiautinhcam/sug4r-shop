@@ -3,7 +3,9 @@ import { db } from "@/db";
 import { orders, payments } from "@/db/schema";
 import { RATE_LIMITS } from "@/lib/rate-limit";
 import { logSecurityEvent } from "@/lib/security-events";
-import { eq, and } from "drizzle-orm";
+import { eq } from "drizzle-orm";
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Payment webhook endpoint.
@@ -32,7 +34,13 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     // Determine payment method from webhook payload
-    const paymentMethod = body.payment_method ?? body.type?.startsWith("stripe") ? "stripe" : null;
+    const paymentMethod =
+      (typeof body.payment_method === "string" && body.payment_method.length > 0
+        ? body.payment_method
+        : null) ??
+      (typeof body.type === "string" && body.type.startsWith("stripe")
+        ? "stripe"
+        : null);
 
     if (!paymentMethod) {
       await logSecurityEvent({
@@ -63,17 +71,25 @@ export async function POST(request: Request) {
     }
 
     // Generic webhook processing for future adapters
-    const { order_id, provider_tx_id, amount, currency } = body;
+    const orderId = typeof body.order_id === "string" ? body.order_id : "";
+    const providerTxId =
+      typeof body.provider_tx_id === "string" ? body.provider_tx_id : "";
+    const amount = typeof body.amount === "number" ? body.amount : 0;
+    const currency =
+      typeof body.currency === "string" ? body.currency : "USD";
 
-    if (!order_id || !provider_tx_id) {
+    if (!orderId || !providerTxId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+    if (!UUID_REGEX.test(orderId)) {
+      return NextResponse.json({ error: "Invalid order_id format" }, { status: 400 });
     }
 
     // Idempotency check
     const [existingPayment] = await db
       .select({ id: payments.id, status: payments.status })
       .from(payments)
-      .where(eq(payments.providerTxId, provider_tx_id))
+      .where(eq(payments.providerTxId, providerTxId))
       .limit(1);
 
     if (existingPayment && existingPayment.status === "confirmed") {
@@ -85,7 +101,7 @@ export async function POST(request: Request) {
     const [order] = await db
       .select({ id: orders.id, status: orders.status })
       .from(orders)
-      .where(eq(orders.id, order_id))
+      .where(eq(orders.id, orderId))
       .limit(1);
 
     if (!order) {
@@ -93,7 +109,7 @@ export async function POST(request: Request) {
         eventType: "webhook.order_not_found",
         severity: "warn",
         ipAddress: ip,
-        details: { orderId: order_id, providerTxId: provider_tx_id },
+        details: { orderId, providerTxId },
       });
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
@@ -104,21 +120,21 @@ export async function POST(request: Request) {
         .update(payments)
         .set({
           status: "confirmed",
-          providerTxId: provider_tx_id,
+          providerTxId,
           confirmedAt: new Date(),
           updatedAt: new Date(),
         })
         .where(eq(payments.id, existingPayment.id));
     } else {
       await db.insert(payments).values({
-        orderId: order_id,
+        orderId,
         paymentMethod,
         status: "confirmed",
-        amount: amount ?? 0,
-        currency: currency ?? "USD",
-        providerTxId: provider_tx_id,
+        amount,
+        currency,
+        providerTxId,
         confirmedAt: new Date(),
-        idempotencyKey: `webhook_${provider_tx_id}`,
+        idempotencyKey: `webhook_${providerTxId}`,
       });
     }
 
@@ -126,13 +142,13 @@ export async function POST(request: Request) {
     await db
       .update(orders)
       .set({ status: "paid", updatedAt: new Date() })
-      .where(eq(orders.id, order_id));
+      .where(eq(orders.id, orderId));
 
     await logSecurityEvent({
       eventType: "webhook.payment_confirmed",
       severity: "info",
       ipAddress: ip,
-      details: { orderId: order_id, providerTxId: provider_tx_id },
+      details: { orderId, providerTxId },
     });
 
     return NextResponse.json({ status: "success" });

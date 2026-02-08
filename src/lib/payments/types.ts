@@ -35,14 +35,22 @@ export interface PaymentAdapter {
   /** Adapter name */
   name: string;
 
-  /** Creates a payment intent/session for the given order */
-  createPaymentIntent(order: {
-    id: string;
-    orderCode: string;
-    total: number;
-    currency: string;
-    customerEmail: string;
-  }): Promise<PaymentIntentResult>;
+  /**
+   * Creates a payment intent/session for the given order.
+   * @param dbClient - Optional Drizzle db/transaction instance.
+   *                   Pass the transaction object when called inside a transaction
+   *                   to avoid FK-check deadlocks.
+   */
+  createPaymentIntent(
+    order: {
+      id: string;
+      orderCode: string;
+      total: number;
+      currency: string;
+      customerEmail: string;
+    },
+    dbClient?: import("@/db").DbClient,
+  ): Promise<PaymentIntentResult>;
 
   /** Verifies and parses a webhook request from the payment provider */
   verifyWebhook?(request: Request): Promise<WebhookEvent>;

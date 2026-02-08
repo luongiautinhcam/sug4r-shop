@@ -1,4 +1,4 @@
-import { db } from "@/db";
+import { db, type DbClient } from "@/db";
 import { payments } from "@/db/schema";
 import type {
   PaymentAdapter,
@@ -13,8 +13,9 @@ import type {
 export const manualTransferAdapter: PaymentAdapter = {
   name: "manual_transfer",
 
-  async createPaymentIntent(order): Promise<PaymentIntentResult> {
-    const [payment] = await db
+  async createPaymentIntent(order, dbClient?: DbClient): Promise<PaymentIntentResult> {
+    const client = dbClient ?? db;
+    const [payment] = await client
       .insert(payments)
       .values({
         orderId: order.id,

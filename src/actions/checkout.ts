@@ -45,7 +45,8 @@ export async function createOrderAction(
     return { success: false, error: parsed.error.errors[0]?.message ?? "Invalid input" };
   }
 
-  const { email, productId, quantity, paymentMethod } = parsed.data;
+  const { email: rawEmail, productId, quantity, paymentMethod } = parsed.data;
+  const email = rawEmail.toLowerCase();
 
   // 2. Rate limit
   const rateLimit = RATE_LIMITS.checkout(`checkout:${ip}`);
@@ -155,15 +156,18 @@ export async function createOrderAction(
         throw new Error("INSUFFICIENT_STOCK");
       }
 
-      // 5d. Create payment via adapter
+      // 5d. Create payment via adapter (pass tx to avoid FK deadlock)
       const adapter = getPaymentAdapter(paymentMethod);
-      const paymentResult = await adapter.createPaymentIntent({
-        id: order.id,
-        orderCode,
-        total: totalPrice,
-        currency: product.currency,
-        customerEmail: email,
-      });
+      const paymentResult = await adapter.createPaymentIntent(
+        {
+          id: order.id,
+          orderCode,
+          total: totalPrice,
+          currency: product.currency,
+          customerEmail: email,
+        },
+        tx,
+      );
 
       return {
         orderCode,

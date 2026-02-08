@@ -20,7 +20,10 @@
       "Bash(curl:*)",
       "Bash(npm run build:*)",
       "Bash(test:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(npm audit:*)",
+      "Bash(git add:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

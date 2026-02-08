@@ -16,6 +16,15 @@ const queryClient = postgres(connectionString, {
 
 export const db = drizzle(queryClient, { schema });
 
+/**
+ * Type alias usable for both `db` and transaction `tx`.
+ * Picks only the query methods shared by both types.
+ */
+export type DbClient = Pick<
+  typeof db,
+  "insert" | "select" | "update" | "delete" | "execute"
+>;
+
 // Export a function to create a single-use client for migrations/scripts
 export function createMigrationClient() {
   return postgres(connectionString!, { max: 1 });

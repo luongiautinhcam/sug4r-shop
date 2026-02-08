@@ -27,34 +27,48 @@ export async function validateAdminSession(): Promise<{
 
   if (!result.session) {
     // Session invalid or expired — clear cookie
-    const blankCookie = lucia.createBlankSessionCookie();
-    cookieStore.set(
-      blankCookie.name,
-      blankCookie.value,
-      blankCookie.attributes,
-    );
+    // Cookie mutation may fail in Server Component context (pages/layouts);
+    // that's fine — the redirect to /login will handle the stale cookie.
+    try {
+      const blankCookie = lucia.createBlankSessionCookie();
+      cookieStore.set(
+        blankCookie.name,
+        blankCookie.value,
+        blankCookie.attributes,
+      );
+    } catch {
+      // Not in a mutable context (Server Component render) — skip
+    }
     return null;
   }
 
   // If session is fresh (just extended), update the cookie
   if (result.session.fresh) {
-    const sessionCookie = lucia.createSessionCookie(result.session.id);
-    cookieStore.set(
-      sessionCookie.name,
-      sessionCookie.value,
-      sessionCookie.attributes,
-    );
+    try {
+      const sessionCookie = lucia.createSessionCookie(result.session.id);
+      cookieStore.set(
+        sessionCookie.name,
+        sessionCookie.value,
+        sessionCookie.attributes,
+      );
+    } catch {
+      // Not in a mutable context — skip
+    }
   }
 
   // Check user is still active
   if (!result.user.isActive) {
     await lucia.invalidateSession(sessionId);
-    const blankCookie = lucia.createBlankSessionCookie();
-    cookieStore.set(
-      blankCookie.name,
-      blankCookie.value,
-      blankCookie.attributes,
-    );
+    try {
+      const blankCookie = lucia.createBlankSessionCookie();
+      cookieStore.set(
+        blankCookie.name,
+        blankCookie.value,
+        blankCookie.attributes,
+      );
+    } catch {
+      // Not in a mutable context — skip
+    }
     return null;
   }
 

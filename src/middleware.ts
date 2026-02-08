@@ -12,6 +12,21 @@ function getAllowedOrigin(): string {
   }
 }
 
+function addLocalOriginAliases(origin: string, allowedOrigins: Set<string>) {
+  try {
+    const parsed = new URL(origin);
+    const portSuffix = parsed.port ? `:${parsed.port}` : "";
+
+    if (parsed.hostname === "localhost") {
+      allowedOrigins.add(`${parsed.protocol}//127.0.0.1${portSuffix}`);
+    } else if (parsed.hostname === "127.0.0.1") {
+      allowedOrigins.add(`${parsed.protocol}//localhost${portSuffix}`);
+    }
+  } catch {
+    // Ignore invalid origin values.
+  }
+}
+
 export function middleware(request: NextRequest) {
   // CSRF Origin check for state-changing methods
   if (STATE_CHANGING_METHODS.has(request.method)) {
@@ -22,13 +37,39 @@ export function middleware(request: NextRequest) {
       const origin = request.headers.get("origin");
       const referer = request.headers.get("referer");
 
-      const requestOrigin = origin
-        ? origin
-        : referer
-          ? new URL(referer).origin
-          : null;
+      let requestOrigin: string | null = null;
+      if (origin) {
+        requestOrigin = origin;
+      } else if (referer) {
+        try {
+          requestOrigin = new URL(referer).origin;
+        } catch {
+          // Malformed referer should be rejected, not crash middleware.
+          return new NextResponse(null, { status: 403 });
+        }
+      }
 
-      if (requestOrigin && requestOrigin !== getAllowedOrigin()) {
+      const forwardedHost = request.headers
+        .get("x-forwarded-host")
+        ?.split(",")[0]
+        ?.trim();
+      const host = forwardedHost ?? request.headers.get("host");
+      const forwardedProto = request.headers
+        .get("x-forwarded-proto")
+        ?.split(",")[0]
+        ?.trim();
+      const protocol = forwardedProto ?? request.nextUrl.protocol.replace(":", "");
+      const requestHostOrigin = host ? `${protocol}://${host}` : null;
+
+      const allowedOrigins = new Set([
+        getAllowedOrigin(),
+        request.nextUrl.origin,
+        ...(requestHostOrigin ? [requestHostOrigin] : []),
+      ]);
+      for (const origin of [...allowedOrigins]) {
+        addLocalOriginAliases(origin, allowedOrigins);
+      }
+      if (requestOrigin && !allowedOrigins.has(requestOrigin)) {
         return new NextResponse(null, { status: 403 });
       }
     }

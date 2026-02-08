@@ -87,7 +87,7 @@ export async function confirmTotpSetup(
     return { success: false, error: "No pending TOTP setup found." };
   }
 
-  const secret = JSON.parse(row.value as string) as string;
+  const secret = row.value as string;
 
   // Verify code
   if (!verifyTotpCode(secret, parsed.data.code)) {
@@ -292,7 +292,7 @@ export async function verifyTotpLogin(
 
     if (recoveryRow) {
       try {
-        const encData = JSON.parse(recoveryRow.value as string);
+        const encData = recoveryRow.value as { encrypted: string; iv: string; tag: string; keyId: string };
         const decryptedCodes = decrypt({
           encrypted: Buffer.from(encData.encrypted, "base64"),
           iv: Buffer.from(encData.iv, "base64"),
